@@ -1,5 +1,10 @@
 import sublime, sublime_plugin
-import urllib2, json
+import sys
+if (sys.version_info >= (3, 0)):
+  import urllib, json
+else:
+  import urllib2, json
+  
 
 
 s = sublime.load_settings("Neo4j.sublime-settings")
@@ -31,9 +36,18 @@ class Neo4jCommand(sublime_plugin.TextCommand):
 
       # POST to neo4j cypher REST api
       try:
-        req = urllib2.Request(s.get("neo4j_api"), data, HEADERS)
-        response = urllib2.urlopen(req)
-        response_json = json.loads(response.read())
+        url = s.get("neo4j_api")
+        if (sys.version_info >= (3, 0)):
+          req = urllib.request.Request(url, data.encode('utf-8'), HEADERS)
+          response = urllib.request.urlopen(req)
+          response_data = response.read().decode('utf-8')
+          response_json = json.loads(response_data)
+        else:
+          req = urllib2.Request(url, data, HEADERS)
+          response = urllib2.urlopen(req)
+          response_json = json.loads(response.read())
+
+        
         response.close()
 
         column_count = len(response_json['columns'])
@@ -53,10 +67,10 @@ class Neo4jCommand(sublime_plugin.TextCommand):
 
         response.close()
       
-      except urllib2.HTTPError, h:
+      except urllib.error.HTTPError as h:
         print('http error: {0} {1}'.format(h.code,h.msg))
 
-      except urllib2.URLError, e:
+      except urllib.error.URLError as e:
         print('url error: {0} {1}'.format(e.message,e.reason))
 
 
